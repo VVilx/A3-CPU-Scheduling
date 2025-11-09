@@ -8,5 +8,5 @@ Whether submitting as a group or individually, every submission must include a R
 4. FIU email address of each member.
    vvila012@fiu.edu, kcast230@fiu.edu
 5. Include any relevant notes about compilation, execution, or the programming environment needed to test your assignment. *Please keep it simple—avoid complex setup or testing requirements.
-
+   Wrote the code in VS Code and tested it in PuTTY. Copied the files over to PuTTY by using WinSCP.
 ⚠️ DO NOT forget to rename your skeleton files to the required filenames before testing and submission.
