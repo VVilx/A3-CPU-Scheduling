@@ -250,7 +250,7 @@ void round_robin(SchedulerContext *ctx, int time_quantum)
             in_ready_queue[idx] = true;
         }
     }
-    display_results(ctx, "RR");
+    display_results(ctx, "Round-Robin (RR)");
 }
 
 

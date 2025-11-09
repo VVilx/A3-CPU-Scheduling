@@ -153,7 +153,7 @@ void shortest_remaining_time_first(SchedulerContext *ctx)
         }
     }
 
-    display_results(ctx, "SHORTEST_REMAINING_TIME_FIRST");
+    display_results(ctx, "Shortest-Remaining_Time-First (SRTF)");
 }
 
 

@@ -95,26 +95,32 @@
  * This function implements priority-based preemptive scheduling with Round Robin
  * used for tie-breaking when multiple processes have the same priority.
  */
-void priority_preemptive_rr(SchedulerContext *ctx, int time_quantum)
+void priority_preemptive_rr(SchedulerContext *ctx)
 {
-    if (time_quantum <= 0 || ctx->num_processes <= 0) {
-        return;
+    
+    int time_quantum = ctx->time_quantum;
+    if (time_quantum <= 0) {
+        time_quantum = 2;  // safe default
     }
+
+
     reset_process_states(ctx);
 
+    int n = ctx->num_processes;
     int current_time = 0;
     int completed = 0;
-    int n = ctx->num_processes;
 
     for (int i = 0; i < n; i++) {
         ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
     }
+
 
     while (completed < n) {
 
         int highest_priority = INT_MAX;
         int ready_processes[MAX_PROCESSES];
         int ready_count = 0;
+
 
         for (int i = 0; i < n; i++) {
             Process *p = &ctx->processes[i];
@@ -148,6 +154,19 @@ void priority_preemptive_rr(SchedulerContext *ctx, int time_quantum)
             continue;
         }
 
+        for (int i = 0; i < ready_count - 1; i++) {
+            for (int j = 0; j < ready_count - 1 - i; j++) {
+                int idx_a = ready_processes[j];
+                int idx_b = ready_processes[j + 1];
+                if (ctx->processes[idx_a].pid > ctx->processes[idx_b].pid) {
+                    int tmp = ready_processes[j];
+                    ready_processes[j] = ready_processes[j + 1];
+                    ready_processes[j + 1] = tmp;
+                }
+            }
+        }
+
+        
         bool higher_priority_arrived = false;
 
         for (int r = 0; r < ready_count && completed < n; r++) {
@@ -157,13 +176,15 @@ void priority_preemptive_rr(SchedulerContext *ctx, int time_quantum)
             if (p->remaining_time <= 0) {
                 continue;
             }
-            int time_to_execute = (p->remaining_time < time_quantum)
-                                  ? p->remaining_time
-                                  : time_quantum;
 
-            for (int t = 0; t < time_to_execute; t++) {
-                current_time += 1;
-                p->remaining_time -= 1;
+            int run_for = (p->remaining_time < time_quantum)
+                            ? p->remaining_time
+                            : time_quantum;
+
+            for (int t = 0; t < run_for; t++) {
+        
+                current_time++;
+                p->remaining_time--;
 
                 if (p->remaining_time == 0) {
                     p->completion_time = current_time;
@@ -175,30 +196,27 @@ void priority_preemptive_rr(SchedulerContext *ctx, int time_quantum)
                     if (q->arrival_time == current_time &&
                         q->remaining_time > 0 &&
                         q->priority < highest_priority) {
-                      
                         higher_priority_arrived = true;
                         break;
                     }
                 }
 
                 if (higher_priority_arrived) {
-                    break; 
+                    break;
                 }
 
                 if (p->remaining_time == 0) {
-                    break; 
+                    break;
                 }
             }
 
-
             if (higher_priority_arrived) {
-                break;
+                break;  
             }
         }
-    
     }
 
-    display_results(ctx, "PRIORITY_PREEMPTIVE_RR");
+    display_results(ctx, "PRIORITY_PREEMPTIVE_WITH_RR");
 }
 
 /* ========================================================================================*/
