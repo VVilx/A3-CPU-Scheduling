@@ -76,12 +76,33 @@ void first_come_first_served(SchedulerContext *ctx)
     // IMPORTANT: Do NOT modify ctx->processes array order directly
     Process local_processes[MAX_PROCESSES];
     // TODO: Copy all processes from ctx->processes to local_processes
-    
+    for (int i = 0; i < ctx->num_processes; i++){
+        local_processes[i] = ctx->processes[i];
+    }
     
     // Step 3: Sort LOCAL copy by arrival time, then by PID for tie-breaking
     // TODO: Implement sorting logic
     // HINT: Use nested loops for bubble sort or selection sort  
-    
+    for (int i = 0; i <ctx->num_processes - 1; i++){
+        for(int j = i + 1; j < ctx->num_processes; j++){
+            int swap = 0;
+
+            if (local_processes[j].arrival_time < local_processes[i].arrival_time) {
+                swap = 1;
+            }
+            // PID if arrival_time is equal
+            else if (local_processes[j].arrival_time == local_processes[i].arrival_time &&
+                     local_processes[j].pid < local_processes[i].pid) {
+                swap = 1;
+            }
+
+            if (swap) {
+                Process temp = local_processes[i];
+                local_processes[i] = local_processes[j];
+                local_processes[j] = temp;
+            }
+        }
+    }
 
     // Step 4: Execute processes in FCFS order
     int current_time = 0;
@@ -89,15 +110,27 @@ void first_come_first_served(SchedulerContext *ctx)
     for (int i = 0; i < ctx->num_processes; i++)
     {
         // TODO: Handle CPU idle time if needed        
+        Process  *p = &local_processes[i];
+        if (current_time < p->arrival_time) {
+            current_time = p->arrival_time;
+        }
 
         // TODO: Calculate completion time for this process       
+        int completion_time = current_time + p->burst_time;
 
         // TODO: Find the corresponding process in the GLOBAL array (ctx->processes)
         //       and update its completion_time
         // HINT: Search by PID to find the correct process
-        
+        for (int g = 0; g < ctx->num_processes; g++) {
+            if (ctx->processes[g].pid == p->pid) {
+                ctx->processes[g].completion_time = completion_time;
+                // if your struct tracks start_time / waiting_time you could set them here too
+                break;
+            }
+        }
 
         // TODO: Move current_time forward
+        current_time = completion_time;
         
     }
 

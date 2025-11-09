@@ -98,11 +98,32 @@ void shortest_job_first(SchedulerContext *ctx)
         // TODO: Loop through all processes
         for (int i = 0; i < ctx->num_processes; i++)
         {
+            Process *p = &ctx->processes[i];
             // TODO: Check if process has arrived and is not completed
-            
+             if (!is_completed[i] && p->arrival_time <= current_time)
+            {
             // TODO: Apply tie-breaking logic to select the best process
                 // TIE-BREAKING ORDER: burst_time → arrival_time → pid
+                 if (p->burst_time < min_burst_time)
+                {
+                    min_burst_time = p->burst_time;
+                    best_idx = i;
+                }
+                else if (p->burst_time == min_burst_time && best_idx != -1)
+                {
+                    Process *best = &ctx->processes[best_idx];
 
+                    if (p->arrival_time < best->arrival_time)
+                    {
+                        best_idx = i;
+                    }
+                    else if (p->arrival_time == best->arrival_time &&
+                             p->pid < best->pid)
+                    {
+                        best_idx = i;
+                    }
+                }
+            }
         }
 
         // Step 5: Handle the selected process or CPU idle time
@@ -112,26 +133,40 @@ void shortest_job_first(SchedulerContext *ctx)
             // TODO: Find the next arrival time among incomplete processes
             // HINT: Loop through all processes to find minimum arrival_time > current_time
             int next_arrival = INT_MAX;
+            for (int i = 0; i < ctx->num_processes; i++)
+            {
+                if (!is_completed[i] && ctx->processes[i].arrival_time > current_time)
+                {
+                    if (ctx->processes[i].arrival_time < next_arrival)
+                    {
+                        next_arrival = ctx->processes[i].arrival_time;
+                    }
+                }
+            }
             
             
             // TODO: Jump current_time to next_arrival
-            
+            if (next_arrival != INT_MAX)
+            {
+                current_time = next_arrival;
+            }
         }
         else
         {
+            Process *p = &ctx->processes[best_idx];
             // Process found - execute it to completion
             // TODO: Update current_time by adding burst_time of selected process
-            
+            current_time += p->burst_time;
             
             // TODO: Record the completion_time for this process
             // HINT: ctx->processes[best_idx].completion_time = current_time;
-            
+            p->completion_time = current_time;
             
             // TODO: Mark this process as completed
-            
+            is_completed[best_idx] = true;
             
             // TODO: Increment the completed counter
-            
+            completed++;
         }
     }
 
