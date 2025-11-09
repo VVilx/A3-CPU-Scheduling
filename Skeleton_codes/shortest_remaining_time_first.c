@@ -87,110 +87,75 @@
  * it selects the process with the shortest remaining execution time among
  * all arrived processes. Processes can be preempted when a shorter job arrives.
  */
+#include <limits.h>
+#include <stdbool.h>
+
 void shortest_remaining_time_first(SchedulerContext *ctx)
 {
-    // Step 1: Reset all process states
-    // IMPORTANT: This initializes remaining_time = burst_time for each process
     reset_process_states(ctx);
 
-    // Step 2: Initialize variables
-    int current_time = 0;    // Current time in the simulation
-    int completed = 0;       // Count of completed processes
+    int n = ctx->num_processes;
+    int current_time = 0;
+    int completed = 0;
 
-    // Step 3: Main scheduling loop - execute until all processes complete
-    while (completed < ctx->num_processes)
-    {
-        int shortest = -1;                  // Index of process with shortest remaining time
-        int min_remaining_time = INT_MAX;   // Minimum remaining time found so far
+    for (int i = 0; i < n; i++) {
+        ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+    }
 
-        // Step 4: Find the process with shortest remaining time that has arrived
-        // TODO: Loop through all processes
-        for (int i = 0; i < ctx->num_processes; i++)
-        {
+
+    while (completed < n) {
+        int shortest = -1;
+        int min_remaining_time = INT_MAX;
+
+        for (int i = 0; i < n; i++) {
             Process *p = &ctx->processes[i];
-            // TODO: Check if process has arrived and has remaining time > 0
-             if (p->arrival_time <= current_time && p->remaining_time > 0) {
 
+            if (p->arrival_time <= current_time && p->remaining_time > 0) {
                 if (p->remaining_time < min_remaining_time) {
-            // TODO: Apply tie-breaking logic to select the process with shortest remaining time
-                // TIE-BREAKING ORDER: remaining_time → arrival_time → pid
-                min_remaining_time = p->remaining_time;
+                    min_remaining_time = p->remaining_time;
                     shortest = i;
                 } else if (p->remaining_time == min_remaining_time) {
-                    // tie 1: earlier arrival
-                    Process *chosen = &ctx->processes[shortest];
-                    if (p->arrival_time < chosen->arrival_time) {
+                    Process *best = &ctx->processes[shortest];
+                    if (p->arrival_time < best->arrival_time) {
                         shortest = i;
-                    } else if (p->arrival_time == chosen->arrival_time) {
-                        // tie 2: smaller PID
-                        if (p->pid < chosen->pid) {
+                    } else if (p->arrival_time == best->arrival_time) {
+                        if (p->pid < best->pid) {
                             shortest = i;
                         }
                     }
                 }
             }
         }
-
-        }
-
-        // Step 5: Handle the selected process or CPU idle time
-        if (shortest == -1)
-        {
-            // No process is ready - CPU is idle
-            // TODO: Find the next arrival time among processes with remaining_time > 0
-            // HINT: Loop through all processes to find minimum arrival_time > current_time
+        if (shortest == -1) {
             int next_arrival = INT_MAX;
             for (int i = 0; i < n; i++) {
-                Process *p = &ctx->processes[i];
-                if (p->remaining_time > 0 &&
-                    p->arrival_time > current_time &&
-                    p->arrival_time < next_arrival) {
-                    next_arrival = p->arrival_time;
+                if (ctx->processes[i].remaining_time > 0 &&
+                    ctx->processes[i].arrival_time > current_time &&
+                    ctx->processes[i].arrival_time < next_arrival) {
+                    next_arrival = ctx->processes[i].arrival_time;
                 }
             }
 
-            if (next_arrival == INT_MAX)
+            if (next_arrival != INT_MAX) {
+                current_time = next_arrival;
+                continue;
+            } else {
                 break;
-            
-            // TODO: Jump current_time to next_arrival
-            
-        }
-        else
-        {
-            // Process found - execute it for 1 time unit (preemptive)
-            // TODO: Decrement the remaining_time of the selected process by 1
-            Process *run = &ctx->processes[shortest];
-
-            run->remaining_time -= 1;
-            // TODO: Increment current_time by 1
-            current_time += 1;
-            // TODO: Check if the process has completed execution
-            // HINT: If remaining_time becomes 0
-            if (run->remaining_time == 0) {
-                 // TODO: Record the completion_time for this process
-                // HINT: ctx->processes[shortest].completion_time = current_time;
-                run->completion_time = current_time;
-                 // TODO: Increment the completed counter
-                completed++;
             }
         }
-    
-            
-            
-            
-            
-            
-            
-            
-               
-                
-                
-               
-                
 
-    // Step 6: Display results
-    display_results(ctx, "Shortest-Remaining_Time-First (SRTF)");
+        ctx->processes[shortest].remaining_time--;
+        current_time++;
+
+        if (ctx->processes[shortest].remaining_time == 0) {
+            ctx->processes[shortest].completion_time = current_time;
+            completed++;
+        }
+    }
+
+    display_results(ctx, "SHORTEST_REMAINING_TIME_FIRST");
 }
+
 
 /* ========================================================================================*/
 /*

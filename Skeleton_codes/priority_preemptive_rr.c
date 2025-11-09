@@ -97,151 +97,108 @@
  */
 void priority_preemptive_rr(SchedulerContext *ctx, int time_quantum)
 {
-    // Input validation
-    if (time_quantum <= 0) {
-        fprintf(stderr, "Error: Time quantum must be positive\n");
+    if (time_quantum <= 0 || ctx->num_processes <= 0) {
         return;
     }
-
-    // Step 1: Reset process states
     reset_process_states(ctx);
 
-    // Step 2: Initialize variables
-    int current_time = 0;   // Current time in simulation
-    int completed = 0;      // Count of completed processes
+    int current_time = 0;
+    int completed = 0;
+    int n = ctx->num_processes;
 
-    // Step 3: Main scheduling loop
-    while (completed < ctx->num_processes)
-    {
-        // Step 4: Find highest priority (minimum priority number) among arrived processes
-        int highest_priority = INT_MAX;  // Will store the lowest priority number (highest priority)
-        int ready_processes[MAX_PROCESSES];  // Array to store indices of ready processes
-        int ready_count = 0;  // Count of processes at highest priority level
+    for (int i = 0; i < n; i++) {
+        ctx->processes[i].remaining_time = ctx->processes[i].burst_time;
+    }
 
-        // TODO: Find the highest priority (minimum priority number) among all arrived processes
-        // HINT: Loop through all processes to determine the process with highest priority
-         for (int i = 0; i < ctx->num_processes; i++) {
+    while (completed < n) {
+
+        int highest_priority = INT_MAX;
+        int ready_processes[MAX_PROCESSES];
+        int ready_count = 0;
+
+        for (int i = 0; i < n; i++) {
             Process *p = &ctx->processes[i];
-
             if (p->arrival_time <= current_time && p->remaining_time > 0) {
                 if (p->priority < highest_priority) {
-                    // found a better (numerically smaller) priority
                     highest_priority = p->priority;
                     ready_count = 0;
                     ready_processes[ready_count++] = i;
                 } else if (p->priority == highest_priority) {
-                    // same best priority, add to RR list
                     ready_processes[ready_count++] = i;
                 }
             }
         }
 
-        // Step 5: If no process ready, jump to next arrival
-        if (ready_count == 0)
-        {
-            // TODO: Find next arrival time
+        if (ready_count == 0) {
             int next_arrival = INT_MAX;
-            for (int i = 0; i < ctx->num_processes; i++) {
+            for (int i = 0; i < n; i++) {
                 Process *p = &ctx->processes[i];
-                if (p->remaining_time > 0 && p->arrival_time > current_time) {
-                    if (p->arrival_time < next_arrival) {
-                        next_arrival = p->arrival_time;
-                    }
+                if (p->remaining_time > 0 &&
+                    p->arrival_time > current_time &&
+                    p->arrival_time < next_arrival) {
+                    next_arrival = p->arrival_time;
                 }
             }
 
+            if (next_arrival == INT_MAX) {
+                break;
+            }
 
-            // TODO: Jump to next arrival time
-            if (next_arrival == INT_MAX) break;
-            
             current_time = next_arrival;
             continue;
         }
 
-        // Step 6: Round Robin scheduling for processes with same highest priority
-        // Execute each ready process for its time quantum (or remaining time)
-        for (int i = 0; i < ready_count && completed < ctx->num_processes; i++)
-        {
-            int idx = ready_processes[i];
+        bool higher_priority_arrived = false;
+
+        for (int r = 0; r < ready_count && completed < n; r++) {
+            int idx = ready_processes[r];
             Process *p = &ctx->processes[idx];
-            // TODO: Skip if process already completed
-             if (p->remaining_time <= 0)
+
+            if (p->remaining_time <= 0) {
                 continue;
-            // TODO: Calculate time to execute for this process
-            // HINT: Execute for minimum of (time_quantum, remaining_time)
+            }
             int time_to_execute = (p->remaining_time < time_quantum)
                                   ? p->remaining_time
                                   : time_quantum;
 
-            bool higher_priority_arrived = false;
-            int time_to_execute = 0;
-
-            // Execute the process time unit by time unit (for preemption check)
-            // TODO: Loop for time_to_execute iterations
-            for (int t = 0; t < time_to_execute; t++)
-            {
-                // TODO: Advance time by 1 unit
-                 current_time += 1;
-
-                // TODO: Decrease remaining_time by 1
-                p->remaining_time -= 1;
-
-                // TODO: Check if a higher priority process has arrived (preemption check)
-                // HINT: Loop through all processes
-                //       If (arrival_time == current_time && remaining_time > 0 && priority < highest_priority)
-                //           Set preempted flag and break
-                bool preempted = false;
-                            for (int t = 0; t < time_to_execute; t++)
-            {
+            for (int t = 0; t < time_to_execute; t++) {
                 current_time += 1;
                 p->remaining_time -= 1;
 
-                for (int j = 0; j < ctx->num_processes; j++) {
-                    Process *q = &ctx->processes[j];
+                if (p->remaining_time == 0) {
+                    p->completion_time = current_time;
+                    completed++;
+                }
 
+                for (int j = 0; j < n; j++) {
+                    Process *q = &ctx->processes[j];
                     if (q->arrival_time == current_time &&
                         q->remaining_time > 0 &&
-                        q->priority < highest_priority)
-                    {
+                        q->priority < highest_priority) {
+                      
                         higher_priority_arrived = true;
                         break;
                     }
                 }
 
-                if (p->remaining_time == 0)
-                    break;
+                if (higher_priority_arrived) {
+                    break; 
+                }
 
-                if (higher_priority_arrived)
-                    break;
-
-
-                // TODO: If preempted, break out of execution loop
-                if (preempted)
-                    break;
-            }
-
-            // TODO: Check if process completed
-            // HINT: If remaining_time == 0, record completion_time and increment completed
-              if (p->remaining_time == 0) {
-                p->completion_time = current_time;
-                completed++;
+                if (p->remaining_time == 0) {
+                    break; 
+                }
             }
 
 
-            // TODO: After executing one process, check if higher priority arrived
-            // If so, break out of RR loop to re-evaluate priorities in next iteration
-            bool higher_priority_arrived = false;
-            
-
-
-
-            if (higher_priority_arrived)
-                break;  // Exit RR loop, will re-evaluate priorities in next iteration of main loop
+            if (higher_priority_arrived) {
+                break;
+            }
         }
+    
     }
 
-    // Step 7: Display results
-    display_results(ctx, "PRIORITY_PREEMPTIVE_WITH_RR");
+    display_results(ctx, "PRIORITY_PREEMPTIVE_RR");
 }
 
 /* ========================================================================================*/
