@@ -104,7 +104,7 @@ void priority_non_preemptive(SchedulerContext *ctx)
         // TODO: Loop through all processes
         for (int i = 0; i < ctx->num_processes; i++)
         {
-            Process *p = &ctx->num_processes[i];
+            Process *p = &ctx->processes[i];
 
             // TODO: Check if process has arrived and is not completed   
             if(!is_completed[i] && p->arrival_time <= current_time){
@@ -166,7 +166,7 @@ void priority_non_preemptive(SchedulerContext *ctx)
         {
             // Execute the selected process to completion (non-preemptive)
             // TODO: Update current_time by adding burst_time of selected process
-            current_time += p->burst_time;
+            current_time += ctx->processes[best_idx].burst_time;
             
             // TODO: Record the completion_time for this process
             // HINT: ctx->processes[best_idx].completion_time = current_time;
